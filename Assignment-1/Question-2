@@ -1,0 +1,49 @@
+import re
+
+b = int(input())
+banned = []
+
+for _ in range(b):
+    banned.append(input().strip().lower())
+
+n = int(input())
+
+for i in range(1, n + 1):
+    password = input().strip()
+
+    if len(password) < 6 or len(password) > 12:
+        print(f"{i}: WEAK_LENGTH")
+        continue
+
+    has_lower = any(c.islower() for c in password)
+    has_upper = any(c.isupper() for c in password)
+    has_digit = any(c.isdigit() for c in password)
+    has_special = any(c in "$#@" for c in password)
+
+    if not (has_lower and has_upper and has_digit and has_special):
+        print(f"{i}: WEAK_PATTERN")
+        continue
+
+    repeated = False
+
+    for j in range(len(password) - 3):
+        if password[j] == password[j + 1] == password[j + 2] == password[j + 3]:
+            repeated = True
+            break
+
+    if repeated:
+        print(f"{i}: WEAK_PATTERN")
+        continue
+
+    password_lower = password.lower()
+    compromised = False
+
+    for word in banned:
+        if word in password_lower:
+            compromised = True
+            break
+
+    if compromised:
+        print(f"{i}: COMPROMISED")
+    else:
+        print(f"{i}: STRONG")
