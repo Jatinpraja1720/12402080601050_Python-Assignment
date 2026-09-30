@@ -1,0 +1,107 @@
+class Account:
+    def __init__(self, account_id, balance):
+        self.account_id = account_id
+        self.balance = balance
+
+    def deposit(self, amount):
+        self.balance += amount
+
+    def withdraw(self, amount):
+        if amount > self.balance:
+            raise ValueError("Insufficient balance")
+        self.balance -= amount
+
+
+class Transaction:
+    def __init__(self, operation, account, amount):
+        self.operation = operation
+        self.account = account
+        self.amount = amount
+
+
+class Bank:
+    def __init__(self):
+        self.accounts = {}
+        self.history = []
+        self.batch_backup = None
+        self.batch_number = 0
+        self.failed_batch = None
+
+    def add_account(self, account):
+        self.accounts[account.account_id] = account
+
+    def deposit(self, acc, amount):
+        self.accounts[acc].deposit(amount)
+        self.history.append(Transaction("DEPOSIT", acc, amount))
+
+    def withdraw(self, acc, amount):
+        self.accounts[acc].withdraw(amount)
+        self.history.append(Transaction("WITHDRAW", acc, amount))
+
+    def transfer(self, from_acc, to_acc, amount):
+        self.accounts[from_acc].withdraw(amount)
+        self.accounts[to_acc].deposit(amount)
+        self.history.append(
+            Transaction("TRANSFER", from_acc + " -> " + to_acc, amount)
+        )
+
+    def start_batch(self):
+        self.batch_number += 1
+        self.batch_backup = {
+            acc: account.balance
+            for acc, account in self.accounts.items()
+        }
+
+    def end_batch(self):
+        self.batch_backup = None
+
+
+bank = Bank()
+
+n = int(input())
+
+for _ in range(n):
+    acc, balance = input().split()
+    bank.add_account(Account(acc, int(balance)))
+
+q = int(input())
+
+in_batch = False
+
+for _ in range(q):
+    parts = input().split()
+    operation = parts[0]
+
+    try:
+        if operation == "BATCH_BEGIN":
+            bank.start_batch()
+            in_batch = True
+
+        elif operation == "BATCH_END":
+            bank.end_batch()
+            in_batch = False
+
+        elif operation == "DEPOSIT":
+            bank.deposit(parts[1], int(parts[2]))
+
+        elif operation == "WITHDRAW":
+            bank.withdraw(parts[1], int(parts[2]))
+
+        elif operation == "TRANSFER":
+            bank.transfer(parts[1], parts[2], int(parts[3]))
+
+    except Exception:
+        if in_batch:
+            for acc, balance in bank.batch_backup.items():
+                bank.accounts[acc].balance = balance
+
+            bank.failed_batch = bank.batch_number
+            bank.batch_backup = None
+            in_batch = False
+
+
+if bank.failed_batch is not None:
+    print("FAILED", bank.failed_batch)
+
+for acc in sorted(bank.accounts):
+    print(acc, bank.accounts[acc].balance)
