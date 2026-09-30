@@ -1,0 +1,108 @@
+expressions = {}
+memo = {}
+visiting = set()
+
+
+def calculate(expression):
+    expression = expression.strip()
+
+    if expression.isdigit():
+        return int(expression)
+
+    # Remove outer brackets
+    if expression.startswith("(") and expression.endswith(")"):
+        count = 0
+        valid = True
+
+        for i, ch in enumerate(expression):
+            if ch == "(":
+                count += 1
+            elif ch == ")":
+                count -= 1
+
+            if count == 0 and i != len(expression) - 1:
+                valid = False
+                break
+
+        if valid:
+            return calculate(expression[1:-1])
+
+    count = 0
+
+    for i in range(len(expression) - 1, -1, -1):
+        ch = expression[i]
+
+        if ch == ")":
+            count += 1
+        elif ch == "(":
+            count -= 1
+        elif count == 0 and ch in "+-":
+            left = calculate(expression[:i])
+            right = calculate(expression[i + 1:])
+
+            if ch == "+":
+                return left + right
+            else:
+                return left - right
+
+    count = 0
+
+    for i in range(len(expression) - 1, -1, -1):
+        ch = expression[i]
+
+        if ch == ")":
+            count += 1
+        elif ch == "(":
+            count -= 1
+        elif count == 0 and ch == "*":
+            left = calculate(expression[:i])
+            right = calculate(expression[i + 1:])
+            return left * right
+
+    if expression in expressions:
+        return get_variable(expression)
+
+    raise ValueError()
+
+
+def get_variable(name):
+    if name in memo:
+        return memo[name]
+
+    if name in visiting:
+        raise RuntimeError("CYCLE")
+
+    if name not in expressions:
+        raise ValueError()
+
+    visiting.add(name)
+
+    try:
+        value = calculate(expressions[name])
+        memo[name] = value
+    finally:
+        visiting.remove(name)
+
+    return value
+
+
+try:
+    v = int(input())
+
+    for _ in range(v):
+        line = input()
+        name, expression = line.split("=", 1)
+
+        name = name.strip()
+        expressions[name] = expression.strip()
+
+    final_expression = input().strip()
+
+    answer = calculate(final_expression)
+    print(answer)
+
+except RuntimeError:
+    print("CYCLE")
+
+except:
+    print("INVALID")
