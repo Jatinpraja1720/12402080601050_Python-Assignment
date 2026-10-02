@@ -1,0 +1,44 @@
+import heapq
+
+n, e = map(int, input().split())
+
+modules = []
+
+for _ in range(n):
+    modules.append(input().strip())
+
+graph = {module: [] for module in modules}
+indegree = {module: 0 for module in modules}
+
+edges = set()
+
+for _ in range(e):
+    a, b = input().split()
+
+    if (a, b) not in edges:
+        edges.add((a, b))
+        graph[b].append(a)
+        indegree[a] += 1
+
+heap = []
+
+for module in modules:
+    if indegree[module] == 0:
+        heapq.heappush(heap, module)
+
+order = []
+
+while heap:
+    current = heapq.heappop(heap)
+    order.append(current)
+
+    for module in graph[current]:
+        indegree[module] -= 1
+
+        if indegree[module] == 0:
+            heapq.heappush(heap, module)
+
+if len(order) != n:
+    print("CYCLE")
+else:
+    print(" ".join(order))
