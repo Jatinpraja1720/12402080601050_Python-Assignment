@@ -1,3 +1,9 @@
+'''
+Problem Statement: Build an interactive calculator that accepts formulas of the form operand operator operand. Operands may be
+integers, decimals or previously stored variables. Supported operators are +, -, *, / and %. Invalid format, unknown variables, division by
+zero and unsupported operators must raise separate custom exceptions. The calculator must continue until the user enters quit.
+'''
+
 class InvalidFormatError(Exception):
     pass
 
@@ -18,45 +24,55 @@ variables = {}
 
 
 def get_value(value):
-    if value in variables:
-        return variables[value]
-
     try:
         return float(value)
-    except:
+    except ValueError:
+        if value in variables:
+            return variables[value]
+
         raise UnknownVariableError()
 
 
 def calculate(left, operator, right):
+
     left = get_value(left)
     right = get_value(right)
 
     if operator == "+":
         return left + right
-    elif operator == "-":
+
+    if operator == "-":
         return left - right
-    elif operator == "*":
+
+    if operator == "*":
         return left * right
-    elif operator == "/":
+
+    if operator == "/":
         if right == 0:
             raise DivisionByZeroError()
+
         return left / right
-    elif operator == "%":
+
+    if operator == "%":
         if right == 0:
             raise DivisionByZeroError()
+
         return left % right
-    else:
-        raise UnsupportedOperatorError()
+
+    raise UnsupportedOperatorError()
 
 
 while True:
-    line = input().strip()
 
-    if line.lower() == "quit":
+    line = input()
+
+    if line == "quit":
         break
 
     try:
+
         if "=" in line:
+
             parts = line.split("=")
 
             if len(parts) != 2:
@@ -68,12 +84,10 @@ while True:
             if not name.isidentifier():
                 raise InvalidFormatError()
 
-            try:
-                variables[name] = float(value)
-            except:
-                raise InvalidFormatError()
+            variables[name] = get_value(value)
 
         else:
+
             parts = line.split()
 
             if len(parts) != 3:
@@ -82,18 +96,18 @@ while True:
             result = calculate(parts[0], parts[1], parts[2])
 
             if result.is_integer():
-                print(int(result))
-            else:
-                print(result)
+                result = int(result)
+
+            print(result)
+
+    except InvalidFormatError:
+        print("InvalidFormatError")
+
+    except UnknownVariableError:
+        print("UnknownVariableError")
 
     except DivisionByZeroError:
         print("DivisionByZeroError")
 
     except UnsupportedOperatorError:
         print("UnsupportedOperatorError")
-
-    except UnknownVariableError:
-        print("UnknownVariableError")
-
-    except InvalidFormatError:
-        print("InvalidFormatError")
