@@ -1,3 +1,9 @@
+'''
+Problem Statement: Simulate a job scheduler where each job has job_id, priority, duration and required resource count. Multiple worker
+threads execute jobs. Higher priority jobs must be processed first; jobs with same priority use earlier arrival order. The program must
+maintain thread-safe job assignment and produce a final execution report.
+'''
+
 import heapq
 
 w, n = map(int, input().split())
@@ -5,72 +11,93 @@ w, n = map(int, input().split())
 jobs = []
 
 for i in range(n):
+
     arrival, job_id, priority, duration, resources = input().split()
 
-    jobs.append((
-        int(arrival),
-        i,
-        job_id,
-        int(priority),
-        int(duration),
-        int(resources)
-    ))
+    arrival = int(arrival)
+    priority = int(priority)
+    duration = int(duration)
+    resources = int(resources)
+
+    jobs.append(
+        (arrival, job_id, priority, duration, resources, i)
+    )
 
 jobs.sort()
 
-workers = [(0, i + 1) for i in range(w)]
-heapq.heapify(workers)
+workers = []
 
-waiting_time = 0
-result = []
-ready = []
+for i in range(w):
+    heapq.heappush(workers, (0, i + 1))
 
-i = 0
-current_time = 0
+waiting = []
+completed = []
 
-while i < n or ready:
+time = 0
+index = 0
 
-    while i < n and jobs[i][0] <= current_time:
-        arrival, order, job_id, priority, duration, resources = jobs[i]
+while index < n or waiting:
+
+    if not waiting and index < n and time < jobs[index][0]:
+        time = jobs[index][0]
+
+    while index < n and jobs[index][0] <= time:
+        arrival, job_id, priority, duration, resources, order = jobs[index]
 
         heapq.heappush(
-            ready,
+            waiting,
             (-priority, arrival, order, job_id, duration, resources)
         )
-        i += 1
 
-    if not ready:
-        current_time = jobs[i][0]
-        continue
+        index += 1
 
-    free_time, worker_id = heapq.heappop(workers)
+    worker_time, worker_id = heapq.heappop(workers)
 
-    if free_time > current_time:
-        current_time = free_time
+    if worker_time > time:
+        time = worker_time
 
-        while i < n and jobs[i][0] <= current_time:
-            arrival, order, job_id, priority, duration, resources = jobs[i]
+        while index < n and jobs[index][0] <= time:
+            arrival, job_id, priority, duration, resources, order = jobs[index]
 
             heapq.heappush(
-                ready,
+                waiting,
                 (-priority, arrival, order, job_id, duration, resources)
             )
-            i += 1
 
-    priority, arrival, order, job_id, duration, resources = heapq.heappop(ready)
+            index += 1
 
-    start = max(current_time, free_time)
-    finish = start + duration
+    if not waiting:
+        heapq.heappush(workers, (worker_time, worker_id))
+        continue
 
-    waiting_time += start - arrival
+    priority, arrival, order, job_id, duration, resources = heapq.heappop(waiting)
 
-    result.append((start, job_id, worker_id, finish))
-    heapq.heappush(workers, (finish, worker_id))
+    start_time = max(time, worker_time)
+    finish_time = start_time + duration
 
-    current_time = start
+    waiting_time = start_time - arrival
 
+    completed.append(
+        (job_id, worker_id, start_time, finish_time, waiting_time)
+    )
 
-for start, job_id, worker_id, finish in sorted(result):
-    print(job_id, "W" + str(worker_id), start, finish)
+    heapq.heappush(workers, (finish_time, worker_id))
 
-print("AVG_WAIT", round(waiting_time / n, 2))
+    time = start_time
+
+completed.sort(key=lambda x: x[2])
+
+total_wait = 0
+
+for job_id, worker_id, start_time, finish_time, waiting_time in completed:
+
+    print(job_id, "W" + str(worker_id), start_time, finish_time)
+
+    total_wait += waiting_time
+
+if n > 0:
+    average = total_wait / n
+else:
+    average = 0
+
+print(f"AVG_WAIT {average:.2f}")
